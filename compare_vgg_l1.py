@@ -6,11 +6,7 @@ import numpy as np
 import torch
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-
-def psnr(I1, out):
-    psnr = -10 * math.log10(((I1 - out) * (I1 - out)).mean())
-
-
+'''
 def Vimeo(out_folder_dir, gt_data_path, vgg_data_path, l1_data_path, img_save=True):
     in_path = '../data/01_vimeo_triplet/'
     gt_data_path = '../data/01_vimeo_triplet/tri_testlist.txt'
@@ -66,7 +62,7 @@ def Vimeo(out_folder_dir, gt_data_path, vgg_data_path, l1_data_path, img_save=Tr
         cv2.imwrite(os.path.join(img_folder_dir, 'sequences', name, 'final.png'), final_img)
         cv2.imwrite(os.path.join(img_folder_dir, 'sequences', name, 'compare.png'), compare_img)
         print("finish img")
-
+'''
 
 def sbs_analog(out_folder_dir, gt_data_path, vgg_data_path, l1_data_path, img_save=True):
 
@@ -114,30 +110,44 @@ def sbs_analog(out_folder_dir, gt_data_path, vgg_data_path, l1_data_path, img_sa
 
             for h in range(0, frame_h, 1):
                 for w in range(0, frame_w, 1):
+                    # uint8 type
                     gt_pixel = gt[h, w, :]
                     vgg_pixel = vgg[h, w, :]
                     l1_pixel = l1[h, w, :]
 
-                    diff_vgg = ((gt_pixel - vgg_pixel) * (gt_pixel - vgg_pixel))
-                    diff_vgg_mean = diff_vgg.mean()
-                    diff_l1 = (gt_pixel - l1_pixel) * (gt_pixel - l1_pixel)
-                    diff_l1_mean = diff_l1.mean()
+                    # float64 type
+                    gt_pixel_ = gt_pixel / 255.
+                    vgg_pixel_ = vgg_pixel / 255.
+                    l1_pixel_ = l1_pixel / 255.
+
+                    # compare difference between L1&GT, VGG&GT
+                    diff_vgg = (gt_pixel_ - vgg_pixel_) * (gt_pixel_ - vgg_pixel_)
+                    diff_vgg_mean = math.sqrt(np.sum(diff_vgg))
+                    diff_l1 = (gt_pixel_ - l1_pixel_) * (gt_pixel_ - l1_pixel_)
+                    diff_l1_mean = math.sqrt(np.sum(diff_l1))
                     diff = diff_vgg_mean - diff_l1_mean
+                    diff_ = np.round((diff)).astype('int8')
+
+                    # save compare map
+                    compare_img[h, w, :] = np.clip((diff_ + 128), 0, 255)
+
+                    # save compare pixel image
                     if diff == 0:
                         final_img[h, w, :] = vgg_pixel
-                        compare_img[h, w, :] = [128]
                     elif diff < 0:
                         final_img[h, w, :] = vgg_pixel
-                        compare_img[h, w, :] = [255]
                     else:
                         final_img[h, w, :] = l1_pixel
-                        compare_img[h, w, :] = [0]
 
             os.makedirs(os.path.join(out_folder_dir, clip_dir[i]), exist_ok=True)
             cv2.imwrite(os.path.join(out_folder_dir, clip_dir[i], '{:06d}_final.png'.format(idx+1)), final_img)
             cv2.imwrite(os.path.join(out_folder_dir, clip_dir[i], '{:06d}_compare.png'.format(idx+1)), compare_img)
             print('finish_{}/{:06d}_final.png'.format(clip_dir[i], idx+1))
     print('#################################sbs finish#################################')
+
+def sbs_along_compare_psnr(out_folder_dir, gt_data_path, final_data_path, img_save=True):
+    out_folder_dir = '../compare_vgg_l1/psnr/sbs_along'
+
 
 
 def SNU_FILM(out_folder_dir, SNU_mode, gt_data_path, vgg_data_path, l1_data_path, img_save=True):
@@ -194,24 +204,34 @@ def SNU_FILM(out_folder_dir, SNU_mode, gt_data_path, vgg_data_path, l1_data_path
 
         for h in range(0, frame_h, 1):
             for w in range(0, frame_w, 1):
+                #uint8 type
                 gt_pixel = gt[h, w, :]
                 vgg_pixel = vgg[h, w, :]
                 l1_pixel = l1[h, w, :]
 
-                diff_vgg = ((gt_pixel - vgg_pixel) * (gt_pixel - vgg_pixel))
-                diff_vgg_mean = diff_vgg.mean()
-                diff_l1 = (gt_pixel - l1_pixel) * (gt_pixel - l1_pixel)
-                diff_l1_mean = diff_l1.mean()
+                #float64 type
+                gt_pixel_ = gt_pixel / 1.
+                vgg_pixel_ = vgg_pixel / 1.
+                l1_pixel_ = l1_pixel/ 1.
+
+                #compare difference between L1&GT, VGG&GT
+                diff_vgg = (gt_pixel_ - vgg_pixel_) * (gt_pixel_ - vgg_pixel_)
+                diff_vgg_mean = math.sqrt(np.sum(diff_vgg))
+                diff_l1 = (gt_pixel_ - l1_pixel_) * (gt_pixel_ - l1_pixel_)
+                diff_l1_mean = math.sqrt(np.sum(diff_l1))
                 diff = diff_vgg_mean - diff_l1_mean
+                diff_ = np.round((diff)).astype('int8')
+
+                #save compare map
+                compare_img[h, w, :] = np.clip((diff_ + 128), 0, 255)
+
+                #save compare pixel image
                 if diff == 0:
                     final_img[h, w, :] = vgg_pixel
-                    compare_img[h, w, :] = [128]
                 elif diff < 0:
                     final_img[h, w, :] = vgg_pixel
-                    compare_img[h, w, :] = [255]
                 else:
                     final_img[h, w, :] = l1_pixel
-                    compare_img[h, w, :] = [0]
 
         os.makedirs(os.path.join(out_folder_dir, folder_name), exist_ok=True)
         cv2.imwrite(os.path.join(out_folder_dir, folder_name, '{}_final.png'.format(file_name)), final_img)
@@ -254,17 +274,14 @@ def SNU_FILM_compare_psnr(out_folder_dir, SNU_mode, gt_data_path, final_data_pat
         final_file = os.path.join(final_data_path, folder_name, '{}_final.png'.format(file_name))
 
         gt = cv2.imread(gt_file[1])
-        final = cv2.imread(final_file)
-
         gt = (torch.tensor(gt.transpose(2, 0, 1)).to(device) / 255.).unsqueeze(0)
-        final = (torch.tensor(final.transpose(2, 0, 1)).to(device) / 255.).unsqueeze(0)
-
         gt = np.round((gt[0] * 255).detach().cpu().numpy()).astype('uint8').transpose(1, 2, 0) / 255.
+
+        final = cv2.imread(final_file)
+        final = (torch.tensor(final.transpose(2, 0, 1)).to(device) / 255.).unsqueeze(0)
         final = np.round((final[0] * 255).detach().cpu().numpy()).astype('uint8').transpose(1, 2, 0) / 255.
 
         psnr = -10 * math.log10(((gt - final) * (gt - final)).mean())
-        final_ = (np.round(final * 255)).astype('uint8')
-        I1_ = (np.round(gt * 255)).astype('uint8')
 
         frame_psnr.write('{:.3f}\n'.format(psnr))
         psnr_list.append(psnr)
@@ -277,12 +294,14 @@ def SNU_FILM_compare_psnr(out_folder_dir, SNU_mode, gt_data_path, final_data_pat
 
 if __name__ == '__main__':
     #Vimeo(out_folder_dir='/', gt_data_path='', vgg_data_path='' ,l1_data_path='', img_save=True)
-    #sbs_analog(out_folder_dir='', gt_data_path='', vgg_data_path='' ,l1_data_path='', img_save=True)
     #SNU_FILM(out_folder_dir='', SNU_mode='easy', gt_data_path='', vgg_data_path='' ,l1_data_path='', img_save=True)
     #SNU_FILM(out_folder_dir='', SNU_mode='medium', gt_data_path='', vgg_data_path='' ,l1_data_path='', img_save=True)
     #SNU_FILM(out_folder_dir='', SNU_mode='hard', gt_data_path='', vgg_data_path='' ,l1_data_path='', img_save=True)
     #SNU_FILM(out_folder_dir='', SNU_mode='extreme', gt_data_path='', vgg_data_path='' ,l1_data_path='', img_save=True)
-    SNU_FILM_compare_psnr(out_folder_dir='', SNU_mode='easy', gt_data_path='', final_data_path='', img_save=True)
+    #sbs_analog(out_folder_dir='', gt_data_path='', vgg_data_path='' ,l1_data_path='', img_save=True)
+
+    ###compare mixed pixel psnr
+    #SNU_FILM_compare_psnr(out_folder_dir='', SNU_mode='easy', gt_data_path='', final_data_path='', img_save=True)
     SNU_FILM_compare_psnr(out_folder_dir='', SNU_mode='medium', gt_data_path='', final_data_path='', img_save=True)
-    SNU_FILM_compare_psnr(out_folder_dir='', SNU_mode='hard', gt_data_path='', final_data_path='', img_save=True)
-    SNU_FILM_compare_psnr(out_folder_dir='', SNU_mode='extreme', gt_data_path='', final_data_path='', img_save=True)
+    #SNU_FILM_compare_psnr(out_folder_dir='', SNU_mode='hard', gt_data_path='', final_data_path='', img_save=True)
+    #SNU_FILM_compare_psnr(out_folder_dir='', SNU_mode='extreme', gt_data_path='', final_data_path='', img_save=True)
