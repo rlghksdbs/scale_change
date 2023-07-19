@@ -36,7 +36,7 @@ def create_video(dir):
 def create_video_side_by_side(dir_name1, dir_name2, dir_name3, dir_name4, file_name1, file_name2, file_name3, file_name4, dir_out, out_name):
     error = ""
     #print('{} -r {} -i {}/%d.jpg -qscale:v 2 {}'.format(os.path.join(args.ffmpeg_dir, "ffmpeg"), args.fps, dir, args.output))
-    # retn = os.system('{} -r {} -i {}/{} -r {} -i {}/{} '
+    # retn = os.system('{} -r {} -i {}/{} -r {} -도i {}/{} '
     #                  '-filter_complex "[0:v:0]pad=iw+10:ih:color=white[l]; [l][1:v:0]hstack[v]" -map "[v]" '
     #                  '-b 50000k -vcodec libx264 {}/{}'.
     #                  format(os.path.join(args.ffmpeg_dir, "ffmpeg"), args.fps, dir_name1, file_name1,
@@ -45,10 +45,10 @@ def create_video_side_by_side(dir_name1, dir_name2, dir_name3, dir_name4, file_n
     retn = os.system('{} -r {} -i {}/{} -r {} -i {}/{} -r {} -i {}/{} -r {} -i {}/{} ' 
                     #  '-filter_complex "[0:v][1:v]hstack=inputs=2[top]; [2:v][3:v]hstack=inputs=2[bottom]; [top][bottom]vstack=inputs=2[v]" -map "[v]" '
                     #  '-b 50000k -vcodec libx264 {}/{}'.
-                     '-filter_complex "[0]drawtext=text="RIFE":fontsize=20:x=10:y=10:fontcolor=white[v0]; ' 
-                     '[1]drawtext=text="only_VGG":fontsize=20:x=10:y=10:fontcolor=white[v1]; '
-                     '[2]drawtext=text="L1_VGG":fontsize=20:x=10:y=10:fontcolor=white[v2]; ' 
-                     '[3]drawtext=text="flow_Mag_0.1":fontsize=20:x=10:y=10:fontcolor=white[v3]; ' 
+                     '-filter_complex "[0]drawtext=text="Interlace":fontsize=50:x=700:y=10:fontcolor=red[v0]; ' 
+                     '[1]drawtext=text="KETI":fontsize=50:x=750:y=10:fontcolor=red[v1]; '
+                     '[2]drawtext=text="YADIF":fontsize=50:x=750:y=10:fontcolor=red[v2]; ' 
+                     '[3]drawtext=text="BWDIF":fontsize=50:x=800:y=10:fontcolor=red[v3]; ' 
                      '[v0][v1][v2][v3]xstack=inputs=4:layout=0_0|w0_0|0_h0|w0_h0[v]" -map "[v]" '
                      '-b 50000k -vcodec libx264 {}/{}'.
                      format(os.path.join(args.ffmpeg_dir, "ffmpeg"), args.fps, dir_name1, file_name1,
